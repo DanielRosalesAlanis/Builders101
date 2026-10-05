@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="1600" height="1050" fill="#ffffff"/>
+  <style>
+    .box { fill: #f7f9fc; stroke: #2b3a55; stroke-width: 2; }
+    .pvu { fill: #eaf1ff; stroke: #2b3a55; stroke-width: 2; }
+    .h { font-size: 20px; font-weight: 700; fill: #1d4ed8; }
+    .n { font-size: 13px; font-weight: 700; fill: #94a3b8; }
+    .t { font-size: 15.5px; fill: #1f2937; }
+    .b { font-size: 15.5px; font-weight: 700; fill: #1f2937; }
+    .q { font-size: 17px; font-style: italic; font-weight: 600; fill: #1e3a8a; }
+  </style>
+
+  <text x="20" y="42" font-size="28" font-weight="700" fill="#111827">Lean Canvas · TrustTix</text>
+  <text x="1580" y="42" font-size="15" fill="#475569" text-anchor="end">Boletos de eventos imposibles de duplicar, sobre Stellar</text>
+
+  <!-- Fila superior -->
+  <rect class="box" x="14" y="64" width="308" height="666" rx="6"/>
+  <rect class="box" x="330" y="64" width="308" height="329" rx="6"/>
+  <rect class="box" x="330" y="401" width="308" height="329" rx="6"/>
+  <rect class="pvu" x="646" y="64" width="308" height="666" rx="6"/>
+  <rect class="box" x="962" y="64" width="308" height="329" rx="6"/>
+  <rect class="box" x="962" y="401" width="308" height="329" rx="6"/>
+  <rect class="box" x="1278" y="64" width="308" height="666" rx="6"/>
+  <!-- Fila inferior -->
+  <rect class="box" x="14" y="740" width="782" height="296" rx="6"/>
+  <rect class="box" x="804" y="740" width="782" height="296" rx="6"/>
+
+  <!-- 1. Problema -->
+  <text class="n" x="300" y="88" text-anchor="end">1</text>
+  <text class="h" x="30" y="94">Problema</text>
+  <text class="t" x="30" y="128">
+    <tspan x="30" dy="0">1. Se venden más boletos que</tspan>
+    <tspan x="30" dy="21">lugares reales (sobreventa).</tspan>
+    <tspan x="30" dy="31">2. El mismo boleto se revende</tspan>
+    <tspan x="30" dy="21">varias veces sin que nadie</tspan>
+    <tspan x="30" dy="21">lo verifique con el emisor.</tspan>
+    <tspan x="30" dy="31">3. El conflicto se detecta</tspan>
+    <tspan x="30" dy="21">hasta la puerta, cuando ya</tspan>
+    <tspan x="30" dy="21">no tiene remedio.</tspan>
+  </text>
+  <text class="b" x="30" y="380">Alternativas actuales</text>
+  <text class="t" x="30" y="408">
+    <tspan x="30" dy="0">• Vouchers, reacomodo o</tspan>
+    <tspan x="44" dy="21">reembolso del emisor.</tspan>
+    <tspan x="30" dy="27">• Boleteras centralizadas que</tspan>
+    <tspan x="44" dy="21">solo validan en el acceso.</tspan>
+    <tspan x="30" dy="27">• Confiar en la palabra del</tspan>
+    <tspan x="44" dy="21">revendedor.</tspan>
+  </text>
+
+  <!-- 4. Solución -->
+  <text class="n" x="616" y="88" text-anchor="end">4</text>
+  <text class="h" x="346" y="94">Solución</text>
+  <text class="t" x="346" y="128">
+    <tspan x="346" dy="0">• Boleto como token único en</tspan>
+    <tspan x="360" dy="21">un contrato Soroban con tope</tspan>
+    <tspan x="360" dy="21">de capacidad por evento.</tspan>
+    <tspan x="346" dy="29">• Transferencia y reventa</tspan>
+    <tspan x="360" dy="21">dentro del mismo registro.</tspan>
+    <tspan x="346" dy="29">• Validación por QR en la</tspan>
+    <tspan x="360" dy="21">puerta que marca el boleto</tspan>
+    <tspan x="360" dy="21">como usado.</tspan>
+  </text>
+
+  <!-- 8. Métricas clave -->
+  <text class="n" x="616" y="425" text-anchor="end">8</text>
+  <text class="h" x="346" y="431">Métricas clave</text>
+  <text class="t" x="346" y="465">
+    <tspan x="346" dy="0">• Conflictos de acceso por</tspan>
+    <tspan x="360" dy="21">evento (meta: cero).</tspan>
+    <tspan x="346" dy="29">• Tiempo de validación en la</tspan>
+    <tspan x="360" dy="21">puerta (meta: menos de 5 s).</tspan>
+    <tspan x="346" dy="29">• Boletos emitidos y</tspan>
+    <tspan x="360" dy="21">transferencias verificadas.</tspan>
+    <tspan x="346" dy="29">• Organizadores activos</tspan>
+    <tspan x="360" dy="21">por mes.</tspan>
+  </text>
+
+  <!-- 3. Propuesta de valor única -->
+  <text class="n" x="932" y="88" text-anchor="end">3</text>
+  <text class="h" x="662" y="94">Propuesta de valor única</text>
+  <text class="q" x="662" y="140">
+    <tspan x="662" dy="0">"Tu lugar es tuyo y puedes</tspan>
+    <tspan x="662" dy="24">comprobarlo tú mismo, en</tspan>
+    <tspan x="662" dy="24">cualquier momento, antes de</tspan>
+    <tspan x="662" dy="24">llegar a la puerta."</tspan>
+  </text>
+  <text class="t" x="662" y="260">
+    <tspan x="662" dy="0">Ningún boleto puede tener dos</tspan>
+    <tspan x="662" dy="21">dueños ni venderse por encima</tspan>
+    <tspan x="662" dy="21">de la capacidad del recinto.</tspan>
+    <tspan x="662" dy="31">La regla no depende de la</tspan>
+    <tspan x="662" dy="21">buena fe del vendedor: la</tspan>
+    <tspan x="662" dy="21">hace cumplir la red.</tspan>
+  </text>
+  <text class="b" x="662" y="460">Concepto de alto nivel</text>
+  <text class="t" x="662" y="488">
+    <tspan x="662" dy="0">Un boleto con registro público</tspan>
+    <tspan x="662" dy="21">que es imposible de duplicar.</tspan>
+  </text>
+
+  <!-- 9. Ventaja diferencial -->
+  <text class="n" x="1248" y="88" text-anchor="end">9</text>
+  <text class="h" x="978" y="94">Ventaja diferencial</text>
+  <text class="t" x="978" y="128">
+    <tspan x="978" dy="0">• Registro compartido que</tspan>
+    <tspan x="992" dy="21">ninguna parte controla.</tspan>
+    <tspan x="978" dy="29">• La capacidad la hace cumplir</tspan>
+    <tspan x="992" dy="21">el contrato, no una política.</tspan>
+    <tspan x="978" dy="29">• Costo por operación de</tspan>
+    <tspan x="992" dy="21">fracciones de centavo y</tspan>
+    <tspan x="992" dy="21">confirmación en segundos.</tspan>
+  </text>
+
+  <!-- 5. Canales -->
+  <text class="n" x="1248" y="425" text-anchor="end">5</text>
+  <text class="h" x="978" y="431">Canales</text>
+  <text class="t" x="978" y="465">
+    <tspan x="978" dy="0">• Alianzas con organizadores</tspan>
+    <tspan x="992" dy="21">independientes y foros</tspan>
+    <tspan x="992" dy="21">medianos.</tspan>
+    <tspan x="978" dy="29">• Redes sociales de artistas</tspan>
+    <tspan x="992" dy="21">y comunidades de fans.</tspan>
+    <tspan x="978" dy="29">• Comunidad y programas del</tspan>
+    <tspan x="992" dy="21">ecosistema Stellar.</tspan>
+  </text>
+
+  <!-- 2. Segmentos de usuarios -->
+  <text class="n" x="1564" y="88" text-anchor="end">2</text>
+  <text class="h" x="1294" y="94">Segmentos de usuarios</text>
+  <text class="t" x="1294" y="128">
+    <tspan x="1294" dy="0">• Asistentes a conciertos y</tspan>
+    <tspan x="1308" dy="21">eventos de alta demanda en</tspan>
+    <tspan x="1308" dy="21">México que compran en línea.</tspan>
+    <tspan x="1294" dy="29">• Compradores en reventa.</tspan>
+    <tspan x="1294" dy="29">• Organizadores de eventos</tspan>
+    <tspan x="1308" dy="21">y su personal de acceso.</tspan>
+  </text>
+  <text class="b" x="1294" y="330">Early adopters</text>
+  <text class="t" x="1294" y="358">
+    <tspan x="1294" dy="0">Organizadores independientes</tspan>
+    <tspan x="1294" dy="21">y festivales medianos (500 a</tspan>
+    <tspan x="1294" dy="21">5,000 lugares) que sufren</tspan>
+    <tspan x="1294" dy="21">reventa y no tienen boletera</tspan>
+    <tspan x="1294" dy="21">propia.</tspan>
+  </text>
+  <text class="b" x="1294" y="500">A futuro</text>
+  <text class="t" x="1294" y="528">
+    <tspan x="1294" dy="0">Pasajeros de avión y</tspan>
+    <tspan x="1294" dy="21">aerolíneas.</tspan>
+  </text>
+
+  <!-- 7. Estructura de costos -->
+  <text class="n" x="776" y="764" text-anchor="end">7</text>
+  <text class="h" x="30" y="770">Estructura de costos</text>
+  <text class="t" x="30" y="806">
+    <tspan x="30" dy="0">• Desarrollo y mantenimiento de la app web, la app de acceso y el contrato.</tspan>
+    <tspan x="30" dy="29">• Auditoría de seguridad del contrato antes de pasar a Mainnet.</tspan>
+    <tspan x="30" dy="29">• Infraestructura: hosting, base de datos y proveedor de Stellar RPC.</tspan>
+    <tspan x="30" dy="29">• Comisiones de red (fracciones de centavo por operación) y reservas</tspan>
+    <tspan x="44" dy="21">mínimas de las cuentas patrocinadas.</tspan>
+    <tspan x="30" dy="29">• Soporte y capacitación a organizadores y personal de acceso.</tspan>
+  </text>
+
+  <!-- 6. Flujos de ingresos -->
+  <text class="n" x="1566" y="764" text-anchor="end">6</text>
+  <text class="h" x="820" y="770">Flujos de ingresos</text>
+  <text class="t" x="820" y="806">
+    <tspan x="820" dy="0">• Comisión por boleto emitido (por ejemplo, 3% del precio).</tspan>
+    <tspan x="820" dy="29">• Comisión por reventa verificada dentro de la plataforma (por ejemplo, 2%).</tspan>
+    <tspan x="820" dy="29">• Plan premium para organizadores: panel de métricas, reportes y</tspan>
+    <tspan x="834" dy="21">soporte prioritario.</tspan>
+    <tspan x="820" dy="29">• A futuro: licencia del registro a plataformas de reventa y aerolíneas.</tspan>
+  </text>
+</svg>
