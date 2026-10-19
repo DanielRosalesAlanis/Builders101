@@ -1,4 +1,5 @@
-import { MXN_POR_USDC } from '../data/eventos'
+import { StrKey } from '@stellar/stellar-sdk'
+import { STROOPS_POR_XLM } from '../stellar/config'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MESES_LARGOS = [
@@ -34,19 +35,32 @@ export function fechaLarga(evento) {
   return `${ini.d} de ${MESES_LARGOS[ini.m]} de ${ini.a} · ${evento.hora} hrs`
 }
 
-export function fechaHora(isoDateTime) {
-  const f = new Date(isoDateTime)
+export function fechaHora(valor) {
+  const f = typeof valor === 'number' ? new Date(valor * 1000) : new Date(valor)
   return f.toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export const numero = (n) => n.toLocaleString('es-MX')
+export const numero = (n) => Number(n).toLocaleString('es-MX')
 
-export function precio(mxn) {
-  return mxn === 0 ? 'Gratis' : `$${numero(mxn)}`
+// Precio en stroops (BigInt) a texto en XLM.
+export function xlm(stroops) {
+  const v = BigInt(stroops)
+  const enteros = v / STROOPS_POR_XLM
+  const resto = v % STROOPS_POR_XLM
+  if (resto === 0n) return numero(enteros)
+  return (Number(v) / Number(STROOPS_POR_XLM)).toLocaleString('es-MX', { maximumFractionDigits: 7 })
 }
 
-export function usdc(mxn) {
-  return (mxn / MXN_POR_USDC).toFixed(2)
+export const precio = (stroops) => (BigInt(stroops) === 0n ? 'Gratis' : `${xlm(stroops)} XLM`)
+
+export const aStroops = (xlmTexto) => BigInt(Math.round(Number(xlmTexto || 0) * 10_000_000))
+
+export const folio = (id) => `TTX-${String(id).padStart(6, '0')}`
+
+// Acepta "TTX-000012", "12" o el contenido del QR "TRUSTTIX:TTX-000012".
+export function leerFolio(texto) {
+  const m = /(\d+)\s*$/.exec(String(texto).trim())
+  return m ? Number(m[1]) : null
 }
 
 export function abreviar(direccion) {
@@ -54,6 +68,4 @@ export function abreviar(direccion) {
   return `${direccion.slice(0, 4)}…${direccion.slice(-4)}`
 }
 
-export function direccionValida(direccion) {
-  return /^G[A-Z0-9]{55}$/.test(direccion.trim())
-}
+export const direccionValida = (direccion) => StrKey.isValidEd25519PublicKey(direccion.trim())

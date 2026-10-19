@@ -7,17 +7,26 @@ import Disponibilidad from '../components/Disponibilidad'
 import BotonBilletera from '../components/BotonBilletera'
 import Modal from '../components/Modal'
 import { IconoCalendario, IconoEscudo, IconoUbicacion } from '../components/Iconos'
-import { abreviar, diaMes, fechaLarga, numero, precio, usdc } from '../utils/formato'
+import { abreviar, diaMes, fechaLarga, numero, precio } from '../utils/formato'
+import { enlaceCuenta } from '../stellar/config'
 
 export default function DetalleEvento() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { eventos, billetera, misBoletos, comprar } = useApp()
+  const { eventos, billetera, misBoletos, comprar, cargando } = useApp()
   const [confirmando, setConfirmando] = useState(false)
   const [firmando, setFirmando] = useState(false)
   const [error, setError] = useState('')
 
-  const evento = eventos.find((ev) => ev.id === id)
+  const evento = eventos.find((ev) => ev.id === Number(id))
+  if (!evento && cargando) {
+    return (
+      <>
+        <Encabezado titulo="Detalles" atras />
+        <p className="vacio">Leyendo el evento desde Stellar…</p>
+      </>
+    )
+  }
   if (!evento) {
     return (
       <>
@@ -36,8 +45,8 @@ export default function DetalleEvento() {
     setError('')
     setFirmando(true)
     try {
-      const boleto = await comprar(evento.id)
-      navigate(`/boletos/${boleto.id}`, { state: { recienComprado: true } })
+      const { boletoId, hash } = await comprar(evento.id)
+      navigate(`/boletos/${boletoId}`, { state: { recienComprado: true, hash } })
     } catch (e) {
       setError(e.message)
       setFirmando(false)
@@ -54,7 +63,7 @@ export default function DetalleEvento() {
   } else {
     accion = (
       <button type="button" className="boton boton--claro" onClick={() => setConfirmando(true)}>
-        {evento.precioMXN === 0 ? 'Obtener boleto' : 'Comprar boleto'}
+        {evento.precio === 0n ? 'Obtener boleto' : 'Comprar boleto'}
       </button>
     )
   }
@@ -107,10 +116,10 @@ export default function DetalleEvento() {
             <div>
               <dt>Organiza</dt>
               <dd>
-                {evento.organizador}
-                <span className="verificado" title="Cuenta del organizador registrada en el contrato">
+                {evento.organizadorNombre ?? <span className="mono">{abreviar(evento.organizador)}</span>}
+                <a className="verificado" href={enlaceCuenta(evento.organizador)} target="_blank" rel="noreferrer" title="Cuenta del organizador registrada en el contrato">
                   <IconoEscudo width={13} height={13} /> Verificado
-                </span>
+                </a>
               </dd>
             </div>
           </dl>
@@ -133,13 +142,8 @@ export default function DetalleEvento() {
               <span>{mes}</span>
             </div>
             <div className="precio precio--grande">
-              {precio(evento.precioMXN)}
-              {evento.precioMXN > 0 && (
-                <>
-                  <small> MXN</small>
-                  <span className="precio__usdc">≈ {usdc(evento.precioMXN)} USDC</span>
-                </>
-              )}
+              {precio(evento.precio)}
+              {evento.precio > 0n && <span className="precio__usdc">Se paga en XLM de Testnet</span>}
             </div>
             {accion}
           </div>
@@ -151,12 +155,12 @@ export default function DetalleEvento() {
           <dl className="resumen">
             <div><dt>Evento</dt><dd>{evento.titulo}</dd></div>
             <div><dt>Boletos</dt><dd>1</dd></div>
-            <div><dt>Total</dt><dd>{evento.precioMXN === 0 ? 'Gratis' : `${usdc(evento.precioMXN)} USDC`}</dd></div>
+            <div><dt>Total</dt><dd>{precio(evento.precio)}</dd></div>
             <div><dt>Desde</dt><dd className="mono">{abreviar(billetera)}</dd></div>
             <div><dt>Red</dt><dd>Stellar Testnet</dd></div>
           </dl>
           <p className="nota">
-            El pago y la emisión del boleto ocurren en una sola operación: si una falla, la otra no sucede.
+            Freighter te pedirá firmar. El pago y la emisión del boleto ocurren en una sola transacción: si una falla, la otra no sucede.
           </p>
           {error && <p className="alerta alerta--error" role="alert">{error}</p>}
           <div className="modal__acciones">
@@ -164,7 +168,7 @@ export default function DetalleEvento() {
               Cancelar
             </button>
             <button type="button" className="boton boton--claro" onClick={confirmarCompra} disabled={firmando}>
-              {firmando ? 'Firmando…' : evento.precioMXN === 0 ? 'Firmar' : 'Firmar y pagar'}
+              {firmando ? 'Esperando a la red…' : evento.precio === 0n ? 'Firmar' : 'Firmar y pagar'}
             </button>
           </div>
         </Modal>

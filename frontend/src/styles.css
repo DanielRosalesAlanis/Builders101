@@ -1316,3 +1316,45 @@ img { max-width: 100%; display: block; }
 @media (min-width: 1240px) {
   .rejilla { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ---------- Integración con Stellar ---------- */
+
+.billetera-bloque { display: flex; flex-direction: column; gap: 10px; width: 100%; grid-column: 1 / -1; }
+
+.enlace--externo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: auto;
+}
+
+.historial-bloque { display: flex; flex-direction: column; gap: 14px; }
+.historial__paso .enlace { margin-top: 2px; font-size: 12px; }
+
+.escaner__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.escaner__visor--activo .escaner__video { opacity: 1; }
+
+.estado-red {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--texto-2);
+}
+
+.estado-red::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--exito);
+}

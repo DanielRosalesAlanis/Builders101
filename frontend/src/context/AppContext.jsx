@@ -1,187 +1,246 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { BILLETERA_DEMO, boletosIniciales, eventosIniciales } from '../data/eventos'
+import { metadatos, portadaGenerica } from '../data/eventos'
+import * as red from '../stellar/contrato'
+import { conectar, reconectar } from '../stellar/billetera'
 
-// Estado simulado de la app. Cada acción imita una función del contrato
-// TrustTix (crear_evento, comprar, transferir, consultar_boleto,
-// registrar_entrada) y aplica las mismas reglas que hará cumplir la red.
+// Estado de la app. Todo lo que define la validez de un boleto (eventos,
+// capacidad, vendidos, dueños y entradas) se lee del contrato TrustTix en
+// Testnet. En el navegador solo se guardan la sesión, los datos descriptivos
+// de eventos creados aquí y los enlaces a las transacciones hechas desde aquí.
 
-const CLAVE = 'trusttix-demo-v4'
+const CLAVE = 'trusttix-v5'
 const AppContext = createContext(null)
 
-function cargar() {
+function cargarLocal() {
   try {
-    const guardado = localStorage.getItem(CLAVE)
-    if (guardado) return JSON.parse(guardado)
+    return JSON.parse(localStorage.getItem(CLAVE)) ?? {}
   } catch {
-    // Sin almacenamiento disponible: se usa el estado inicial.
+    return {}
   }
-  return null
 }
 
-function estadoInicial() {
+// Une lo que viene de la red con los datos descriptivos.
+function armarEvento(id, enRed, metaLocal) {
+  const meta = metadatos[id] ?? metaLocal[id] ?? {}
+  const [fecha, hora = '00:00'] = enRed.fecha.split('T')
   return {
-    usuario: null,
-    billetera: null,
-    eventos: eventosIniciales,
-    boletos: boletosIniciales,
+    id,
+    titulo: enRed.nombre,
+    recinto: enRed.recinto,
+    fecha,
+    hora,
+    capacidad: Number(enRed.capacidad),
+    vendidos: Number(enRed.vendidos),
+    precio: BigInt(enRed.precio),
+    organizador: enRed.organizador,
+    categoria: meta.categoria ?? 'Eventos',
+    ciudad: meta.ciudad ?? '',
+    direccion: meta.direccion ?? enRed.recinto,
+    descripcion: meta.descripcion ?? '',
+    organizadorNombre: meta.organizadorNombre ?? null,
+    fechaFin: meta.fechaFin,
+    imagen: meta.imagen,
+    portada: portadaGenerica(enRed.nombre),
   }
 }
 
-const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
+function armarBoleto(id, enRed) {
+  return {
+    id,
+    eventoId: Number(enRed.evento),
+    dueno: enRed.dueno,
+    estado: enRed.usado ? 'usado' : 'valido',
+    usadoEn: enRed.usado ? Number(enRed.usado_en) : null,
+  }
+}
 
 export function AppProvider({ children }) {
-  const [estado, setEstado] = useState(() => cargar() ?? estadoInicial())
+  const inicial = cargarLocal()
+  const [usuario, setUsuario] = useState(inicial.usuario ?? null)
+  const [metaLocal, setMetaLocal] = useState(inicial.metaLocal ?? {})
+  const [registro, setRegistro] = useState(inicial.registro ?? {})
+  const [billetera, setBilletera] = useState(null)
+  const [eventos, setEventos] = useState([])
+  const [misBoletos, setMisBoletos] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [errorRed, setErrorRed] = useState('')
 
   useEffect(() => {
     try {
-      localStorage.setItem(CLAVE, JSON.stringify(estado))
+      localStorage.setItem(CLAVE, JSON.stringify({ usuario, metaLocal, registro }))
     } catch {
-      // Se ignora: la demo sigue funcionando sin persistencia.
+      // Sin almacenamiento: la app sigue funcionando, solo pierde la sesión.
     }
-  }, [estado])
+  }, [usuario, metaLocal, registro])
+
+  const anotar = useCallback((boletoId, tipo, hash) => {
+    setRegistro((r) => ({ ...r, [boletoId]: [...(r[boletoId] ?? []), { tipo, hash, fecha: new Date().toISOString() }] }))
+  }, [])
+
+  const recargarEventos = useCallback(async () => {
+    try {
+      const total = await red.totalEventos()
+      const lista = await Promise.all(
+        Array.from({ length: total }, (_, i) => i + 1).map(async (id) => armarEvento(id, await red.consultarEvento(id), metaLocal)),
+      )
+      setEventos(lista.reverse())
+      setErrorRed('')
+    } catch (e) {
+      setErrorRed(`No pudimos leer la red de Stellar: ${e.message}`)
+    } finally {
+      setCargando(false)
+    }
+  }, [metaLocal])
+
+  const recargarMisBoletos = useCallback(async (cuenta = billetera) => {
+    if (!cuenta) {
+      setMisBoletos([])
+      return
+    }
+    const ids = await red.boletosDe(cuenta)
+    const lista = await Promise.all(ids.map(async (id) => armarBoleto(id, await red.consultarBoleto(id))))
+    setMisBoletos(lista.reverse())
+  }, [billetera])
+
+  useEffect(() => {
+    recargarEventos()
+  }, [recargarEventos])
+
+  useEffect(() => {
+    reconectar().then((cuenta) => cuenta && setBilletera(cuenta))
+  }, [])
+
+  useEffect(() => {
+    recargarMisBoletos(billetera).catch(() => {})
+  }, [billetera, recargarMisBoletos])
 
   const iniciarSesion = useCallback(() => {
-    setEstado((e) => ({ ...e, usuario: { nombre: 'Invitado TrustTix', correo: 'invitado@trusttix.app' } }))
+    setUsuario({ nombre: 'Invitado TrustTix', correo: 'invitado@trusttix.app' })
   }, [])
 
   const cerrarSesion = useCallback(() => {
-    setEstado((e) => ({ ...e, usuario: null, billetera: null }))
+    setUsuario(null)
+    setBilletera(null)
   }, [])
 
   const conectarBilletera = useCallback(async () => {
-    await esperar(600)
-    setEstado((e) => ({ ...e, billetera: BILLETERA_DEMO }))
+    const cuenta = await conectar()
+    setBilletera(cuenta)
+    return cuenta
   }, [])
 
-  const desconectarBilletera = useCallback(() => {
-    setEstado((e) => ({ ...e, billetera: null }))
-  }, [])
+  const desconectarBilletera = useCallback(() => setBilletera(null), [])
 
-  const reiniciarDemo = useCallback(() => {
-    setEstado((e) => ({ ...estadoInicial(), usuario: e.usuario }))
-  }, [])
-
-  // comprar: cobra y emite el boleto en una sola operación. Falla si no hay lugares.
+  // comprar: cobra en XLM y emite el boleto en una sola transacción.
   const comprar = useCallback(
     async (eventoId) => {
-      await esperar(1200)
-      const evento = estado.eventos.find((ev) => ev.id === eventoId)
-      if (!estado.billetera) throw new Error('Conecta tu billetera para comprar.')
-      if (!evento || evento.vendidos >= evento.capacidad) {
-        throw new Error('Ya no quedan lugares. La red rechazó la compra y no se cobró nada.')
-      }
-      let id
-      do {
-        id = `TTX-${String(Math.floor(Math.random() * 1e6)).padStart(6, '0')}`
-      } while (estado.boletos.some((b) => b.id === id))
-      const boleto = {
-        id,
-        eventoId,
-        dueno: estado.billetera,
-        estado: 'valido',
-        historial: [{ tipo: 'compra', a: estado.billetera, fecha: new Date().toISOString() }],
-      }
-      setEstado((e) => ({
-        ...e,
-        eventos: e.eventos.map((ev) => (ev.id === eventoId ? { ...ev, vendidos: ev.vendidos + 1 } : ev)),
-        boletos: [...e.boletos, boleto],
-      }))
-      return boleto
+      if (!billetera) throw new Error('Conecta tu billetera para comprar.')
+      const { resultado, hash } = await red.comprar(billetera, eventoId)
+      const boletoId = Number(resultado)
+      anotar(boletoId, 'compra', hash)
+      await Promise.all([recargarEventos(), recargarMisBoletos()])
+      return { boletoId, hash }
     },
-    [estado.billetera, estado.eventos, estado.boletos],
+    [billetera, anotar, recargarEventos, recargarMisBoletos],
   )
 
-  // transferir: solo el dueño, y solo si el boleto no se ha usado.
   const transferir = useCallback(
     async (boletoId, destino) => {
-      await esperar(1000)
-      const boleto = estado.boletos.find((b) => b.id === boletoId)
-      if (!boleto) throw new Error('El boleto no existe.')
-      if (boleto.dueno !== estado.billetera) throw new Error('Solo el dueño actual puede transferir este boleto.')
-      if (boleto.estado === 'usado') throw new Error('Un boleto usado ya no se puede transferir.')
-      if (destino === estado.billetera) throw new Error('No puedes transferirte el boleto a ti mismo.')
-      setEstado((e) => ({
-        ...e,
-        boletos: e.boletos.map((b) =>
-          b.id === boletoId
-            ? { ...b, dueno: destino, historial: [...b.historial, { tipo: 'transferencia', a: destino, fecha: new Date().toISOString() }] }
-            : b,
-        ),
-      }))
+      if (!billetera) throw new Error('Conecta tu billetera.')
+      const { hash } = await red.transferir(billetera, boletoId, destino)
+      anotar(boletoId, 'transferencia', hash)
+      await recargarMisBoletos()
+      return hash
     },
-    [estado.billetera, estado.boletos],
+    [billetera, anotar, recargarMisBoletos],
   )
 
   // consultar_boleto: lectura pública, no requiere billetera.
   const consultarBoleto = useCallback(
-    (boletoId) => {
-      const id = boletoId.trim().toUpperCase().replace(/^TRUSTTIX:/, '')
-      const boleto = estado.boletos.find((b) => b.id === id)
-      if (!boleto) return null
-      return { boleto, evento: estado.eventos.find((ev) => ev.id === boleto.eventoId) }
+    async (boletoId) => {
+      try {
+        const boleto = armarBoleto(boletoId, await red.consultarBoleto(boletoId))
+        const evento =
+          eventos.find((ev) => ev.id === boleto.eventoId) ??
+          armarEvento(boleto.eventoId, await red.consultarEvento(boleto.eventoId), metaLocal)
+        return { boleto, evento }
+      } catch (e) {
+        if (/no existe/i.test(e.message)) return null
+        throw e
+      }
     },
-    [estado.boletos, estado.eventos],
+    [eventos, metaLocal],
   )
 
-  // registrar_entrada: marca el boleto como usado. Un segundo intento se rechaza.
   const registrarEntrada = useCallback(
     async (boletoId) => {
-      await esperar(800)
-      const boleto = estado.boletos.find((b) => b.id === boletoId)
-      if (!boleto) throw new Error('El boleto no existe.')
-      if (boleto.estado === 'usado') throw new Error('Este boleto ya fue utilizado.')
-      const ahora = new Date().toISOString()
-      setEstado((e) => ({
-        ...e,
-        boletos: e.boletos.map((b) =>
-          b.id === boletoId
-            ? { ...b, estado: 'usado', usadoEn: ahora, historial: [...b.historial, { tipo: 'entrada', fecha: ahora }] }
-            : b,
-        ),
-      }))
+      if (!billetera) throw new Error('Conecta la billetera del personal de acceso.')
+      const { hash } = await red.registrarEntrada(billetera, boletoId)
+      anotar(boletoId, 'entrada', hash)
+      return hash
     },
-    [estado.boletos],
+    [billetera, anotar],
   )
 
-  // crear_evento: la capacidad queda fija desde el inicio.
+  const esPersonal = useCallback(
+    (eventoId) => (billetera ? red.esPersonal(eventoId, billetera) : Promise.resolve(false)),
+    [billetera],
+  )
+
+  // Boletos de un evento: recorre todos los emitidos (suficiente para el MVP).
+  const boletosDeEvento = useCallback(async (eventoId) => {
+    const total = await red.totalBoletos()
+    const todos = await Promise.all(
+      Array.from({ length: total }, (_, i) => i + 1).map(async (id) => armarBoleto(id, await red.consultarBoleto(id))),
+    )
+    return todos.filter((b) => b.eventoId === eventoId)
+  }, [])
+
   const crearEvento = useCallback(
     async (datos) => {
-      await esperar(1000)
-      const id = `${datos.titulo.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now().toString(36)}`
-      const evento = {
-        ...datos,
-        id,
-        vendidos: 0,
-        organizador: estado.usuario?.nombre ?? 'Organizador',
-        organizadorCuenta: estado.billetera,
-        portada: {
-          fondo: 'linear-gradient(135deg, #3a3a3c 0%, #1c1c1e 100%)',
-          texto: datos.titulo.toUpperCase(),
-          estilo: 'nuevo',
-        },
-      }
-      setEstado((e) => ({ ...e, eventos: [evento, ...e.eventos] }))
-      return evento
+      if (!billetera) throw new Error('Conecta tu billetera.')
+      const { resultado, hash } = await red.crearEvento(billetera, {
+        nombre: datos.titulo,
+        recinto: datos.recinto,
+        fecha: `${datos.fecha}T${datos.hora}`,
+        capacidad: datos.capacidad,
+        precio: datos.precio,
+      })
+      const id = Number(resultado)
+      setMetaLocal((m) => ({
+        ...m,
+        [id]: { categoria: datos.categoria, ciudad: datos.ciudad, direccion: datos.direccion, descripcion: datos.descripcion },
+      }))
+      await recargarEventos()
+      return { id, hash }
     },
-    [estado.usuario, estado.billetera],
+    [billetera, recargarEventos],
   )
 
   const valor = useMemo(
     () => ({
-      ...estado,
-      misBoletos: estado.billetera ? estado.boletos.filter((b) => b.dueno === estado.billetera) : [],
+      usuario,
+      billetera,
+      eventos,
+      misBoletos,
+      registro,
+      cargando,
+      errorRed,
       iniciarSesion,
       cerrarSesion,
       conectarBilletera,
       desconectarBilletera,
-      reiniciarDemo,
+      recargarEventos,
+      recargarMisBoletos,
       comprar,
       transferir,
       consultarBoleto,
       registrarEntrada,
+      esPersonal,
+      boletosDeEvento,
       crearEvento,
     }),
-    [estado, iniciarSesion, cerrarSesion, conectarBilletera, desconectarBilletera, reiniciarDemo, comprar, transferir, consultarBoleto, registrarEntrada, crearEvento],
+    [usuario, billetera, eventos, misBoletos, registro, cargando, errorRed, iniciarSesion, cerrarSesion, conectarBilletera, desconectarBilletera, recargarEventos, recargarMisBoletos, comprar, transferir, consultarBoleto, registrarEntrada, esPersonal, boletosDeEvento, crearEvento],
   )
 
   return <AppContext.Provider value={valor}>{children}</AppContext.Provider>

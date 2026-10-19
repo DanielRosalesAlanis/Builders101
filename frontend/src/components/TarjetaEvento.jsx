@@ -68,10 +68,7 @@ export default function TarjetaEvento({ evento, boleto }) {
             {boleto ? (
               <span className={`estado estado--${boleto.estado}`}>{boleto.estado === 'usado' ? 'Usado' : 'Válido'}</span>
             ) : (
-              <>
-                {precio(evento.precioMXN)}
-                {evento.precioMXN > 0 && <small> MXN</small>}
-              </>
+              precio(evento.precio)
             )}
           </span>
           {accion}

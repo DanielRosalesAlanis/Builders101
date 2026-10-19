@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import { CATEGORIAS } from '../data/eventos'
 import Encabezado from '../components/Encabezado'
 import BotonBilletera from '../components/BotonBilletera'
+import { aStroops } from '../utils/formato'
 
 const VACIO = {
   titulo: '',
@@ -14,7 +15,7 @@ const VACIO = {
   fecha: '',
   hora: '20:00',
   capacidad: '',
-  precioMXN: '',
+  precioXLM: '',
   descripcion: '',
 }
 
@@ -30,19 +31,24 @@ export default function CrearEvento() {
   const enviar = async (e) => {
     e.preventDefault()
     const capacidad = Number(datos.capacidad)
-    const precioMXN = Number(datos.precioMXN || 0)
+    const precioXLM = Number(datos.precioXLM || 0)
     if (!Number.isInteger(capacidad) || capacidad < 1) {
       setError('La capacidad debe ser un número entero mayor que cero.')
       return
     }
-    if (precioMXN < 0) {
+    if (!(precioXLM >= 0)) {
       setError('El precio no puede ser negativo.')
       return
     }
     setError('')
     setEnviando(true)
-    const evento = await crearEvento({ ...datos, capacidad, precioMXN })
-    navigate(`/eventos/${evento.id}`)
+    try {
+      const { id } = await crearEvento({ ...datos, capacidad, precio: aStroops(precioXLM) })
+      navigate(`/eventos/${id}`)
+    } catch (err) {
+      setError(err.message)
+      setEnviando(false)
+    }
   }
 
   return (
@@ -96,8 +102,8 @@ export default function CrearEvento() {
               <input required type="number" min="1" step="1" inputMode="numeric" value={datos.capacidad} onChange={cambiar('capacidad')} />
             </label>
             <label className="campo">
-              <span>Precio (MXN, 0 = gratis)</span>
-              <input type="number" min="0" step="1" inputMode="numeric" value={datos.precioMXN} onChange={cambiar('precioMXN')} placeholder="0" />
+              <span>Precio en XLM (0 = gratis)</span>
+              <input type="number" min="0" step="0.1" inputMode="decimal" value={datos.precioXLM} onChange={cambiar('precioXLM')} placeholder="0" />
             </label>
           </div>
           <label className="campo">
@@ -114,7 +120,7 @@ export default function CrearEvento() {
           {error && <p className="alerta alerta--error" role="alert">{error}</p>}
 
           <button type="submit" className="boton boton--claro boton--bloque" disabled={enviando}>
-            {enviando ? 'Registrando en la red…' : 'Firmar y crear evento'}
+            {enviando ? 'Esperando a la red…' : 'Firmar y crear evento'}
           </button>
         </form>
       )}

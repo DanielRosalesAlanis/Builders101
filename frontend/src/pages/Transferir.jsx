@@ -1,32 +1,42 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { OTRAS_CUENTAS } from '../data/eventos'
+import { useBoleto } from '../hooks/useBoleto'
+import { CUENTA_EJEMPLO } from '../data/eventos'
+import { enlaceTx } from '../stellar/config'
 import Encabezado from '../components/Encabezado'
-import { IconoCheck } from '../components/Iconos'
-import { abreviar, direccionValida } from '../utils/formato'
+import { IconoCheck, IconoExterno } from '../components/Iconos'
+import { abreviar, direccionValida, folio } from '../utils/formato'
 
 export default function Transferir() {
   const { id } = useParams()
-  const { boletos, eventos, billetera, transferir } = useApp()
+  const { billetera, transferir } = useApp()
+  const { cargando, datos } = useBoleto(Number(id))
   const [destino, setDestino] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
-  const [hecho, setHecho] = useState(false)
+  const [hash, setHash] = useState('')
 
-  const boleto = boletos.find((b) => b.id === id)
-  const evento = boleto && eventos.find((ev) => ev.id === boleto.eventoId)
-
-  if (!boleto || !evento) {
+  if (cargando && !datos) {
     return (
       <>
         <Encabezado titulo="Transferir" atras />
-        <p className="vacio">No encontramos este boleto.</p>
+        <p className="vacio">Leyendo el boleto desde Stellar…</p>
+      </>
+    )
+  }
+  if (!datos) {
+    return (
+      <>
+        <Encabezado titulo="Transferir" atras />
+        <p className="vacio">No encontramos este boleto en la red.</p>
       </>
     )
   }
 
-  if (hecho) {
+  const { boleto, evento } = datos
+
+  if (hash) {
     return (
       <>
         <Encabezado titulo="Transferir" />
@@ -34,8 +44,11 @@ export default function Transferir() {
           <span className="resultado__icono"><IconoCheck width={40} height={40} /></span>
           <h2>Boleto transferido</h2>
           <p>
-            {boleto.id} ahora pertenece a <span className="mono">{abreviar(destino)}</span>. Ya no aparece en tu cuenta.
+            {folio(boleto.id)} ahora pertenece a <span className="mono">{abreviar(destino)}</span>. Ya no aparece en tu cuenta.
           </p>
+          <a className="enlace enlace--externo" href={enlaceTx(hash)} target="_blank" rel="noreferrer">
+            Ver la transacción en stellar.expert <IconoExterno width={12} height={12} />
+          </a>
           <Link to="/boletos" className="boton boton--claro">Ir a mis boletos</Link>
         </div>
       </>
@@ -47,13 +60,12 @@ export default function Transferir() {
     setError('')
     const limpio = destino.trim()
     if (!direccionValida(limpio)) {
-      setError('La dirección debe empezar con G y tener 56 caracteres.')
+      setError('La dirección no es una cuenta Stellar válida (empieza con G y tiene 56 caracteres).')
       return
     }
     setEnviando(true)
     try {
-      await transferir(boleto.id, limpio)
-      setHecho(true)
+      setHash(await transferir(boleto.id, limpio))
     } catch (err) {
       setError(err.message)
       setEnviando(false)
@@ -68,7 +80,7 @@ export default function Transferir() {
       <form className="formulario tarjeta" onSubmit={enviar}>
         <p className="formulario__contexto">
           <strong>{evento.titulo}</strong>
-          <span className="mono">{boleto.id}</span>
+          <span className="mono">{folio(boleto.id)}</span>
         </p>
 
         {!puede && (
@@ -89,18 +101,19 @@ export default function Transferir() {
             disabled={!puede}
           />
         </label>
-        <button type="button" className="enlace" onClick={() => setDestino(OTRAS_CUENTAS[0])} disabled={!puede}>
+        <button type="button" className="enlace" onClick={() => setDestino(CUENTA_EJEMPLO)} disabled={!puede}>
           Usar una cuenta de ejemplo
         </button>
 
         <p className="nota">
-          Al transferir, el boleto sale de tu cuenta y pasa a la otra persona en el mismo registro. Nunca existen dos dueños al mismo tiempo.
+          Al transferir, el boleto sale de tu cuenta y pasa a la otra persona en el mismo registro. Nunca existen dos dueños al mismo
+          tiempo.
         </p>
 
         {error && <p className="alerta alerta--error" role="alert">{error}</p>}
 
         <button type="submit" className="boton boton--claro boton--bloque" disabled={!puede || enviando}>
-          {enviando ? 'Firmando…' : 'Firmar y transferir'}
+          {enviando ? 'Esperando a la red…' : 'Firmar y transferir'}
         </button>
       </form>
     </>

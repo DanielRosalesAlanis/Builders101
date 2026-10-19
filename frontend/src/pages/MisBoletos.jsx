@@ -19,18 +19,22 @@ export default function MisBoletos() {
     )
   }
 
+  const conEvento = misBoletos
+    .map((b) => ({ boleto: b, evento: eventos.find((ev) => ev.id === b.eventoId) }))
+    .filter((x) => x.evento)
+
   return (
     <>
       <Encabezado titulo="Mis boletos" />
-      {misBoletos.length === 0 ? (
+      {conEvento.length === 0 ? (
         <div className="vacio vacio--caja">
-          <p>Todavía no tienes boletos.</p>
+          <p>Todavía no tienes boletos en esta cuenta.</p>
           <Link to="/inicio" className="boton boton--claro">Explorar eventos</Link>
         </div>
       ) : (
         <div className="rejilla">
-          {misBoletos.map((b) => (
-            <TarjetaEvento key={b.id} evento={eventos.find((ev) => ev.id === b.eventoId)} boleto={b} />
+          {conEvento.map(({ boleto, evento }) => (
+            <TarjetaEvento key={boleto.id} evento={evento} boleto={boleto} />
           ))}
         </div>
       )}

@@ -8,7 +8,7 @@ import { IconoBuscar, IconoUbicacion } from '../components/Iconos'
 const sinAcentos = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 export default function Inicio() {
-  const { eventos } = useApp()
+  const { eventos, cargando, errorRed } = useApp()
   const [busqueda, setBusqueda] = useState('')
   const [categoria, setCategoria] = useState('Todos')
 
@@ -58,7 +58,10 @@ export default function Inicio() {
         </div>
       </section>
 
-      {visibles.length > 0 ? (
+      {errorRed && <p className="alerta alerta--error">{errorRed}</p>}
+      {cargando ? (
+        <p className="vacio">Leyendo eventos desde Stellar Testnet…</p>
+      ) : visibles.length > 0 ? (
         <div className="rejilla">
           {visibles.map((ev) => (
             <TarjetaEvento key={ev.id} evento={ev} />

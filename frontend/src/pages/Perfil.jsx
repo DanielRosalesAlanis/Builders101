@@ -2,10 +2,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import Encabezado from '../components/Encabezado'
 import BotonBilletera from '../components/BotonBilletera'
-import { IconoCalendario, IconoEscaner } from '../components/Iconos'
+import { IconoCalendario, IconoEscaner, IconoExterno } from '../components/Iconos'
+import { enlaceContrato, enlaceCuenta } from '../stellar/config'
 
 export default function Perfil() {
-  const { usuario, billetera, misBoletos, desconectarBilletera, cerrarSesion, reiniciarDemo } = useApp()
+  const { usuario, billetera, misBoletos, desconectarBilletera, cerrarSesion } = useApp()
   const navigate = useNavigate()
 
   return (
@@ -26,11 +27,14 @@ export default function Perfil() {
           <>
             <p className="mono rompe">{billetera}</p>
             <p className="nota">Freighter · Stellar Testnet · {misBoletos.length} boleto(s)</p>
+            <a className="enlace enlace--externo" href={enlaceCuenta(billetera)} target="_blank" rel="noreferrer">
+              Ver mi cuenta en stellar.expert <IconoExterno width={12} height={12} />
+            </a>
             <button type="button" className="boton boton--contorno" onClick={desconectarBilletera}>Desconectar</button>
           </>
         ) : (
           <>
-            <p className="nota">Conecta tu billetera para comprar, ver y transferir boletos.</p>
+            <p className="nota">Conecta Freighter (en Testnet) para comprar, ver y transferir boletos.</p>
             <BotonBilletera grande />
           </>
         )}
@@ -45,10 +49,13 @@ export default function Perfil() {
           <IconoEscaner />
           <span><strong>App de acceso</strong><small>Escanea boletos en la puerta</small></span>
         </Link>
+        <a href={enlaceContrato()} target="_blank" rel="noreferrer" className="menu__opcion">
+          <IconoExterno />
+          <span><strong>Contrato TrustTix</strong><small>Ver el contrato y sus transacciones en Testnet</small></span>
+        </a>
       </section>
 
       <div className="acciones acciones--columna">
-        <button type="button" className="boton boton--contorno" onClick={reiniciarDemo}>Reiniciar datos de la demo</button>
         <button type="button" className="boton boton--peligro" onClick={() => { cerrarSesion(); navigate('/login') }}>
           Cerrar sesión
         </button>

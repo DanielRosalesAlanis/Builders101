@@ -1,29 +1,39 @@
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { useApp } from '../context/AppContext'
+import { useBoleto } from '../hooks/useBoleto'
 import Encabezado from '../components/Encabezado'
 import Portada from '../components/Portada'
 import Historial from '../components/Historial'
-import { IconoEnviar, IconoUbicacion } from '../components/Iconos'
-import { abreviar, diaMes, fechaHora } from '../utils/formato'
+import { IconoEnviar, IconoExterno, IconoUbicacion } from '../components/Iconos'
+import { enlaceTx } from '../stellar/config'
+import { abreviar, diaMes, fechaHora, folio } from '../utils/formato'
 
 export default function DetalleBoleto() {
   const { id } = useParams()
   const { state } = useLocation()
-  const { boletos, eventos, billetera } = useApp()
+  const { billetera } = useApp()
+  const { cargando, datos, error } = useBoleto(Number(id))
 
-  const boleto = boletos.find((b) => b.id === id)
-  const evento = boleto && eventos.find((ev) => ev.id === boleto.eventoId)
-
-  if (!boleto || !evento) {
+  if (cargando && !datos) {
     return (
       <>
         <Encabezado titulo="Detalle del boleto" atras />
-        <p className="vacio">No encontramos este boleto. <Link to="/boletos">Ir a mis boletos</Link></p>
+        <p className="vacio">Leyendo el boleto desde Stellar…</p>
       </>
     )
   }
 
+  if (!datos) {
+    return (
+      <>
+        <Encabezado titulo="Detalle del boleto" atras />
+        <p className="vacio">{error || 'No encontramos este boleto en la red.'} <Link to="/boletos">Ir a mis boletos</Link></p>
+      </>
+    )
+  }
+
+  const { boleto, evento } = datos
   const esMio = boleto.dueno === billetera
   const usado = boleto.estado === 'usado'
   const { dia, mes } = diaMes(evento.fecha)
@@ -34,12 +44,17 @@ export default function DetalleBoleto() {
 
       {state?.recienComprado && (
         <p className="alerta alerta--exito" role="status">
-          ¡Listo! Tu boleto quedó registrado a tu nombre en la red.
+          ¡Listo! Tu boleto quedó registrado a tu nombre en Stellar.{' '}
+          {state.hash && (
+            <a className="enlace enlace--externo" href={enlaceTx(state.hash)} target="_blank" rel="noreferrer">
+              Ver la transacción <IconoExterno width={12} height={12} />
+            </a>
+          )}
         </p>
       )}
       {!esMio && (
         <p className="alerta" role="status">
-          Este boleto ya no está en tu cuenta. Su dueño actual es <span className="mono">{abreviar(boleto.dueno)}</span>.
+          Este boleto no está en tu cuenta. Su dueño actual es <span className="mono">{abreviar(boleto.dueno)}</span>.
         </p>
       )}
 
@@ -58,12 +73,12 @@ export default function DetalleBoleto() {
           <div className="boleto__abajo">
             <div className="boleto__qr">
               {esMio && !usado ? (
-                <QRCodeSVG value={`TRUSTTIX:${boleto.id}`} size={176} level="M" marginSize={0} />
+                <QRCodeSVG value={`TRUSTTIX:${folio(boleto.id)}`} size={176} level="M" marginSize={0} />
               ) : (
-                <span className="boleto__sello">{usado ? 'USADO' : 'TRANSFERIDO'}</span>
+                <span className="boleto__sello">{usado ? 'USADO' : 'AJENO'}</span>
               )}
             </div>
-            <p className="boleto__folio mono">{boleto.id}</p>
+            <p className="boleto__folio mono">{folio(boleto.id)}</p>
             <div className="boleto__pie">
               <div className="fecha-grande">
                 <strong>{dia}</strong>
@@ -88,7 +103,10 @@ export default function DetalleBoleto() {
 
           <section className="tarjeta">
             <h3 className="tarjeta__titulo">Registro del boleto</h3>
-            <p className="nota">Muestra este QR en la entrada. Cada boleto solo puede entrar una vez.</p>
+            <p className="nota">
+              Muestra este QR en la entrada. El dueño y el estado se leen del contrato en Stellar Testnet, así que cualquiera puede
+              comprobarlos.
+            </p>
             <Historial boleto={boleto} />
           </section>
         </aside>
